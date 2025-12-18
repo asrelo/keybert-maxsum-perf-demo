@@ -127,6 +127,7 @@ class TimedTrialer:
 
     @classmethod
     def _worker(cls, connection, func, args=(), kwargs=None, *, max_iter=int(1e6), time_limit=1.0):
+        connection.send(None)
         try:
             avg_time, _ = measure_avg_time(
                 func, args=args, kwargs=kwargs, max_iter=max_iter, time_limit=time_limit,
@@ -162,6 +163,8 @@ class TimedTrialer:
         try:
             process.start()
             connection_child.close()    # not needed in the parent
+            # to avoid including the process startup time into the timeout:
+            _ = connection_parent.recv()
             if connection_parent.poll(self.trial_timeout):
                 result, exc = connection_parent.recv()
                 process.join()

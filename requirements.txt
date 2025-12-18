@@ -1,0 +1,4 @@
+keybert==0.9.0
+matplotlib
+numpy
+tqdm

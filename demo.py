@@ -12,6 +12,7 @@
 import argparse
 from collections.abc import Sized, Iterable
 import importlib
+import math
 import pathlib
 import sys
 import time
@@ -56,14 +57,17 @@ assert RESULTS_NUM_LIMITS[0] <= RESULTS_NUM_LIMITS[1]
 def measure_avg_time(func, args=(), kwargs=None, *, max_iter=int(1e6), time_limit=1.0):
     if kwargs is None:
         kwargs = {}
-    time_limit_ns = int(time_limit * 1e+9)
+    time_limit_ns = (int(time_limit * 1e+9) if time_limit is not None else time_limit)
     iterations = 0
     start_ns = time.perf_counter_ns()
     while (
         (iterations < max_iter)
         and (
             (iterations < 1)
-            or (((end_ns := time.perf_counter_ns()) - start_ns) < time_limit_ns)
+            or (
+                (time_limit_ns is not None)
+                and (((end_ns := time.perf_counter_ns()) - start_ns) < time_limit_ns)
+            )
         )
     ):
         func(*args, **kwargs)
@@ -187,7 +191,10 @@ def parse_args(argv_trunc, prog_name=None):
         '--display', action=argparse.BooleanOptionalAction, default=True, dest='do_display',
     )
     parser.add_argument('--seed', type=int, dest='random_seed')
-    return parser.parse_args(argv_trunc)    # may exit
+    args = parser.parse_args(argv_trunc)    # may exit
+    if math.isinf(args.trial_timeout):
+        args.trial_timeout = None
+    return args
 
 
 def run_trials(*, trial_timeout=1.0, random_seed=None):
